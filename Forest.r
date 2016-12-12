@@ -24,8 +24,12 @@ head(mydata$type)
 
 class(mydata)
 
-author <- mydata[, c(3,8)]
-head(author)
+#### Separate authors from mydata ####
+
+author <- mydata[, c(2,7)]
+
+author_1 <- data.frame(ID = "", author = "")
+
 
 dbWriteTable(conn = db, name = "article", value = article)
 
