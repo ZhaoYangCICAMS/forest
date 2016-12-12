@@ -1,5 +1,6 @@
 
 library("sqldf")
+library("combinat")
 
 # install.packages("CITAN", repos = "http://cran.us.r-project.org")
 
