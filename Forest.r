@@ -40,6 +40,22 @@ for (i in list_ids) {
   author_1 = rbind(author_1, newrow)
 }
 
+#### From list to graph of authors ####
+
+edgelist <- data.frame(Source = character(), Target = character(), stringsAsFactors = FALSE)
+table_ids <- table(author_1$ID)
+table_ids_0 <- data.frame(table_ids)
+table_ids_1 <- table_ids[table_ids_0$Freq > 1,]
+list_ids_1 <- unique(table_ids_1$Var1)
+
+for (i in list_ids_1) {
+  df_1 = author_1[author_1$ID == i,]
+  df_2 = combn(df_1$author, 2)
+  df_3 = data.frame(t(df_2))
+  colnames(df_3) = c("Source", "Target")
+  edgelist = rbind(edgelist, df_3)
+}
+
 
 #### Others ####
 dbWriteTable(conn = db, name = "article", value = article)
