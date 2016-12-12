@@ -1,18 +1,22 @@
 
 library("sqldf")
 
-install.packages("CITAN", repos = "http://cran.us.r-project.org")
+# install.packages("CITAN", repos = "http://cran.us.r-project.org")
 
 if (file.exists("Test.sqlite") == TRUE) file.remove("Forest_1.sqlite")
 
+#### Create database ####
 db <- dbConnect(SQLite(), dbname="Forest_1.sqlite")
 
+
+#### Read file ####
 mydata <- read.csv("EM_WoS.csv")
+mydata$X <- NULL 
 
-mydata
+#### Tidying data ####
 
-article <- mydata[,c(3, 2, 4,37, 44, 42  )]
-head(article)
+article <- mydata[,c(2, 1, 3,36, 43, 41  )]
+
 
 colnames(mydata)
 
