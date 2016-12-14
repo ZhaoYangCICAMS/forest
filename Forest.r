@@ -18,11 +18,6 @@ mydata$X <- NULL
 article <- mydata[,c(2, 1, 3,36, 43, 41  )]
 
 
-colnames(mydata)
-
-head(mydata$type)
-
-class(mydata)
 
 #### Separate authors from mydata ####
 
@@ -34,7 +29,7 @@ list_ids <- unique(author$ID)
 
 for (i in list_ids) {
   row_1 =  author[author$ID == i,]
-  newrow = data.frame(ID= i, strsplit(as.character(row_1$author), "and"))
+  newrow = data.frame(ID= i, strsplit(as.character(row_1$author), "and "))
   colnames(newrow) = c("ID", "author")
   author_1 = rbind(author_1, newrow)
 }
