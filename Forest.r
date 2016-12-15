@@ -83,17 +83,17 @@ network <- graph.data.frame(edgelist, directed = FALSE)
 
 ## Extracting References ##
 
-ref_0 <- mydata[,c("ID","cited.references") ]
+ref_0 <- mydata[!(mydata$cited.references==""),c("ID","cited.references") ]
 ref_1 <- data.frame(ID = character(), ref = character(), stringsAsFactors = FALSE)
-list_ids <- unique(author$ID)
+list_ids <- unique(ref_0$ID)
 
 for (i in list_ids) {
-  row_1 =  author[author$ID == i,]
-  newrow = data.frame(ID= i, strsplit(as.character(row_1$author), ".and."))
-  colnames(newrow) = c("ID", "author")
-  author_1 = rbind(author_1, newrow)
+  row_2 = ref_0[ref_0$ID == i,]
+  newrow_1 = data.frame(ID= i, strsplit(as.character(row_2$cited.references), "\n", fixed = TRUE))
+  colnames(newrow_1) = c("ID", "ref")
+  ref_1 = rbind(ref_1, newrow_1)
 }
 
 y <- data.frame(ref_0$cited.references)
 
-newrow <- data.frame(strsplit(as.character(y), "[.]"))
+newrow <- data.frame(strsplit(as.character(y[1,]), "\n", fixed = TRUE))
