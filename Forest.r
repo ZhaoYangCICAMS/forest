@@ -20,59 +20,67 @@ edgelist <- read.csv2("edgelist.csv", sep = ",")
 ref_1 <- read.csv("ref_1.csv")
 edgelist$X <- NULL
 ref_1$X <- NULL
-EM_authors_ref <- read.csv2("EM_authors_ref.csv", sep = ",")
+### EM_authors_ref <- read.csv2("EM_authors_ref.csv", sep = ",")
+authors <- read.csv2("authors.csv", sep = ",")
+authors$X <- NULL
 edgelist_ref <- read.csv2("edgelist_ref.csv", sep = ",")
 edgelist_ref$X <- NULL
 edgelist_total <- read.csv2("edgelist_total.csv", sep = ",")
 edgelist_total$X <- NULL
 
+### COMPLEX NETWORKS ####
+
 #  merge data of Complex Networks
 
 data_1 <- read.csv2("CN.csv", sep = ",")
 data_1$X <- NULL
-author_0 <- data_1[, c("ID","author")]
+author_0 <- data_1[, c("ID","doi","author")]
 data_1 <- data_1[,c("ID","cited.references" )]
 data_2 <- read.csv2("CN (1).csv", sep = ",")
 data_2$X <- NULL
-author_2 <- data_2[, c("ID","author")]
+author_2 <- data_2[, c("ID","doi","author")]
 data_2 <- data_2[,c("ID","cited.references"  )]
 data_3 <- read.csv2("CN (2).csv", sep = ",")
 data_3$X <- NULL
-author_3 <- data_3[, c("ID","author")]
+author_3 <- data_3[, c("ID","doi","author")]
 data_3 <- data_3[,c("ID","cited.references" )]
 data_4 <- read.csv2("CN (3).csv", sep = ",")
 data_4$X <- NULL
-author_4 <- data_4[, c("ID","author")]
+author_4 <- data_4[, c("ID","doi","author")]
 data_4 <- data_4[,c("ID","cited.references" )]
 data_5 <- read.csv2("CN (4).csv", sep = ",")
 data_5$X <- NULL
-author_5 <- data_5[, c("ID","author")]
+author_5 <- data_5[, c("ID","doi","author")]
 data_5 <- data_5[,c("ID","cited.references" )]
 
 mydata <- do.call("rbind", list(data_1, data_2, data_3, data_4, data_5))
 author <- do.call("rbind", list(author_0, author_2, author_3, author_4, author_5))
 
-# install.packages("CITAN", repos = "http://cran.us.r-project.org")
+### COMPLEX NETWORKS ####
+
+#### install.packages("CITAN", repos = "http://cran.us.r-project.org")
 
 if (file.exists("Test.sqlite") == TRUE) file.remove("Forest_1.sqlite")
 
 #### Create database ####
 db <- dbConnect(SQLite(), dbname="Forest_1.sqlite")
 
+### ENTREPENURIAL MARKETING ####
 
-#### Read file #### (for the topic of Entrepenurial Marketing)
-## mydata <- read.csv("EM_WoS.csv")
-## mydata$X <- NULL 
+#### Read file ### 
+mydata <- read.csv("EM_WoS.csv")
+mydata$X <- NULL 
 
-#### Tidying data ####
+#### Separate authors from mydata (for the topic of Entrepenurial Marketing) ###
 
-## article <- mydata[,c(2, 1, 3,36, 43, 41  )]  # revisar para borrar
+### author <- mydata[, c(2,7)] 
+author <- mydata[, c("ID","doi","author")]
 
-#### Separate authors from mydata (for the topic of Entrepenurial Marketing) #### 
+### ENTREPENURIAL MARKETING ####
 
-## author <- mydata[, c(2,7)] 
 
-## For to authors ###
+
+## For to authors ####
 author_1 <- data.frame(ID = character(), author = character(), stringsAsFactors = FALSE)
 list_ids <- unique(author$ID)
 
@@ -172,29 +180,80 @@ for (i in ref_ID_DOI$DOI) {
     if (as.list(xml_data_2[["query_result"]][["body"]][["query"]][["doi"]][[".attrs"]]) == "journal_article"){
       if (is.null(xml_data_2[["query_result"]][["body"]][["query"]][["doi_record"]][["crossref"]][["journal"]][["journal_article"]][["contributors"]]))
       {next} else {
-      author_ref <- as.list(xml_data_2[["query_result"]][["body"]][["query"]][["doi_record"]][["crossref"]][["journal"]][["journal_article"]][["contributors"]])
-      
-      author_1_ref <- ldply(author_ref, data.frame)
-      author_2_ref <- author_1_ref[author_1_ref$.attrs == "author", c(2,3) ]
-      
-      authorss <- data.frame(doi= doi, author = paste0(author_2_ref$surname, ", ", author_2_ref$given_name))
-      
-      authors = rbind(authors, authorss)
+        author_ref <- as.list(xml_data_2[["query_result"]][["body"]][["query"]][["doi_record"]][["crossref"]][["journal"]][["journal_article"]][["contributors"]])
+        
+        author_1_ref <- ldply(author_ref, data.frame)
+        author_2_ref <- author_1_ref[author_1_ref$.attrs == "author", c(2,3) ]
+        
+        authorss <- data.frame(doi= doi, author = paste0(author_2_ref$surname, ", ", author_2_ref$given_name))
+        
+        authors = rbind(authors, authorss)
       } 
-      }else {next}
+    }else {next}
   }
 }
+
+
+
+#### Delete articles from authors that exist in author ####
+
+### authors_doi <- data.frame(doi = character(), stringsAsFactors = FALSE)
+unique_authors_doi <- data.frame(doi = unique(authors$doi))
+unique_author_doi <- data.frame(doi = unique(author$doi))
+
+equal_dois <- sqldf('SELECT * FROM unique_authors_doi INTERSECT SELECT * FROM unique_author_doi')
+
+
+# Prueba #
+dois <- rbind(unique_authors_doi, unique_author_doi)
+unique_dois <- data.frame(doi = unique(dois$doi))
+
+# Prueba #
+
+author_unique <- author[!(author$doi %in% equal_dois$doi),]
+
+### Organizar el codigo para separar los autores y hacer la combinatoria con el ID 
+
+### authors_doi <- data.frame(doi = authors$doi)
+### not_equal_dois <- sqldf('SELECT * FROM authors_doi EXCEPT SELECT * FROM equal_dois')
+
+
+#### Delete the  articles repeated in authors ####
+authors_unique <- data.frame(doi = character(), author = character(), stringsAsFactors = FALSE)
+t <- 1
+for(i in authors[t,]){
+  if (authors[t,]$doi == authors[(t-1),]$doi){
+    authors_unique[t,] <- data.frame(doi = authors_unique[t,]$doi, author = paste0(authors_unique[t,]$author, " and ", authors[t,]$author) )
+    t <- t+1 
+  } else {
+    if (authors[t,]$doi == authors[(t+1),]$doi){
+      authors_unique0 <- data.frame(doi= authors[t,]$doi , author = paste0(authors[t,]$author, " and ", authors[(t+1),]$author))
+      authors_unique <- rbind(authors_unique, authors_unique0)
+      t <- t+1
+    } else {
+      authors_unique0 <- data.frame(doi= authors[t,]$doi , author = authors[t,]$author)
+      authors_unique <- rbind(authors_unique, authors_unique0)
+      t <- t+1
+    }
+  }
+}
+
+#### Delete the articles repeated in authors ####
+
+
+dumy <- unique(authors[,c("doi", "author")])
+authors <- dumy
 
 #### From list to graph of authors of references ####
 
 edgelist_ref_1 <- data.frame(Source = character(), Target = character(), stringsAsFactors = FALSE)
-table_dois <- table(EM_authors_ref$doi)
+table_dois <- table(authors$doi)
 table_dois_0 <- data.frame(table_dois)
 table_dois_1 <- table_dois_0[table_dois_0$Freq == 2,]
 list_dois_1 <- unique(table_dois_1$Var1)
 
 for (i in list_dois_1) {
-  df_1 = EM_authors_ref[EM_authors_ref$doi == i,]
+  df_1 = authors[authors$doi == i,]
   df_2 = combn(df_1$author, 2)
   df_3 = data.frame(t(data.frame(df_2)))
   colnames(df_3) = c("Source", "Target")
@@ -202,13 +261,13 @@ for (i in list_dois_1) {
 }
 
 edgelist_ref_2 <- data.frame(Source = character(), Target = character(), stringsAsFactors = FALSE)
-table_dois_2 <- table(EM_authors_ref$doi)
+table_dois_2 <- table(authors$doi)
 table_dois_0_2 <- data.frame(table_dois_2)
 table_dois_1_2 <- table_dois_0_2[table_dois_0_2$Freq > 2,]
 list_dois_1_2 <- unique(table_dois_1_2$Var1)
 
 for (i in list_dois_1_2) {
-  df_1_1 = EM_authors_ref[EM_authors_ref$doi == i,]
+  df_1_1 = authors[authors$doi == i,]
   df_2_2 = combn(df_1_1$author, 2)
   df_3_3 = data.frame(t(data.frame(df_2_2)))
   colnames(df_3_3) = c("Source", "Target")
@@ -216,6 +275,7 @@ for (i in list_dois_1_2) {
 }
 
 edgelist_ref <- rbind(edgelist_ref_1, edgelist_ref_2)
+write.csv(edgelist_ref, file = "edgelist_ref.csv")
 
 ## List of total edges
 
@@ -255,4 +315,3 @@ plot(d.net_gml, a.nn.deg.yeast, log="xy",
 
 
 
- 
